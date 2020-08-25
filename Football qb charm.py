@@ -8,15 +8,14 @@ from IPython.display import display
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from collections import Counter
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
+from models import *
 
+################## Load and Process Data ###############################################################
 ds_data = pd.read_csv(r'E:\Sports Data\ASA NFL All Raw Data.csv')
 
 ds_data['Week'] = ds_data['Week'].astype('str')
@@ -38,6 +37,7 @@ tableau_colors = mcolors.TABLEAU_COLORS
 colors.update(tableau_colors)
 colors = list(tableau_colors.keys())
 
+################################ Plot Pass yards by Game ####################################################
 for player in players:
     plt.figure(figsize=(20, 20))
     for i in range(6, 10):
@@ -132,6 +132,7 @@ for i in range(max(labels) + 1):
 plt.legend()
 plt.show()
 plt.clf()
+
 ################################## Hist bar chart ##############################################
 for i in range(max(labels) + 1):
     unique, counts = np.unique(Y[labels == i], return_counts=True)
@@ -190,96 +191,13 @@ print(X_R[0, :])
 XR_train, XR_test, YR_train, YR_test = train_test_split(X_norm_R,  Y_R, test_size=0.2, random_state=42)
 XR_train_R, XR_val, YR_train_R, YR_val = train_test_split(XR_train,  YR_train, test_size=0.2, random_state=42)
 
-"""
-model = Sequential()
-
-# add model layers
-# DENSE is a fully connected layer
-model.add(Dense(10, activation='relu', input_shape=(X_R.shape[1],)))
-model.add(Dense(10, activation='relu'))
-model.add(Dense(10, activation='relu'))
-model.add(Dense(10, activation='relu'))
-model.add(Dense(1))
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=[tf.keras.metrics.RootMeanSquaredError()])
-history = model.fit(XR_train_R, YR_train_R, validation_data= (XR_val, YR_val), epochs=5)
-print(history.history)
-train_loss = history.history['loss']
-val_loss = history.history['val_loss']
-train_rmse = history.history['root_mean_squared_error']
-val_rmse = history.history['val_root_mean_squared_error']
-print('final training loss: ', train_loss[-1],' final val loss: ', val_loss[-1])
-plt.plot([i for i in range(len(train_loss))],train_loss, color = 'r', label = 'train')
-plt.plot([i for i in range(len(val_loss))],val_loss, color = 'b', label = 'val')
-plt.legend()
-plt.xlabel('epochs')
-plt.ylabel('mse')
-plt.title('Loss vs Epochs')
-plt.show()
-plt.clf()
-"""
 
 ############################# Hyper Param ###########################################################
 
-def create_model(lr, num_layers, input_shape):
-    model = Sequential()
-    model.add(Dense(10, activation='relu', input_shape=(input_shape,)))
-    for i in range (num_layers):
-        model.add(Dense(10, activation='relu'))
-    model.add(Dense(1))
-    opt = tf.keras.optimizers.Adam(learning_rate=lr)
-    model.compile(optimizer= opt, loss='mean_squared_error', metrics=[tf.keras.metrics.RootMeanSquaredError()])
-    return model
-
-def plot_model(history, lr, num_layers):
-    train_loss = history.history['loss']
-    val_loss = history.history['val_loss']
-    train_rmse = history.history['root_mean_squared_error']
-    val_rmse = history.history['val_root_mean_squared_error']
-    print('final training loss: ', train_loss[-1], ' final val loss: ', val_loss[-1])
-    plt.plot([i for i in range(len(train_loss))], train_loss, color='r', label='train')
-    plt.plot([i for i in range(len(val_loss))], val_loss, color='b', label='val')
-    plt.legend()
-    plt.xlabel('epochs')
-    plt.ylabel('mse')
-    plt.title('Loss vs Epochs, LR: {}, Num_Layers: {}'.format(lr, num_layers))
-    plt.show()
-    plt.clf()
-    return val_loss[-1]
-
 lrs = [1e-4, 1e-3, 1e-2, 1e-1, 1]
 num_layers = [i for i in range(2,10)]
-def grid_hyperparamsearch(lrs, num_layers, XR_train_R, YR_train_R, XR_val, YR_val, numepochs=200):
-    models = dict()
-    model_scores = dict()
-    for lr in lrs:
-        for num_layer in num_layers:
-            model = create_model(lr, num_layer, XR_train_R.shape [1])
-            history = model.fit(XR_train_R, YR_train_R, validation_data= (XR_val, YR_val), epochs=numepochs)
-            model_scores [(lr, num_layer)] = plot_model(history, lr, num_layer)
-            models [(lr, num_layer)] = model
-
-    best_hyperparam_pair = sorted(model_scores.items(), key=lambda x: x[1], reverse=False)[0][0]
-    print(model_scores)
-    print(best_hyperparam_pair)
-
-    best_model = models[best_hyperparam_pair]
-    results = best_model.evaluate(XR_test, YR_test)
-    print("test loss: {}, test RMSE: {}".format(results[0], results[1]))
-    return best_model, results
-
-
+best_model, results = grid_hyperparamsearch(lrs, num_layers, XR_train_R, YR_train_R, XR_val, YR_val, XR_test, YR_test, numepochs=10)
 ############################## Object Oriented ###############################################
-
-class MyModel(tf.keras.Model):
-#### Constructor Function#################
-  def __init__(self):
-    super(MyModel, self).__init__()
-    self.dense1 = tf.keras.layers.Dense(4, activation=tf.nn.relu)
-    self.dense2 = tf.keras.layers.Dense(5, activation=tf.nn.softmax)
-
-  def call(self, inputs):
-    x = self.dense1(inputs)
-    return self.dense2(x)
 
 Model = MyModel()
 print (Model.call(np.random.normal(size = (1000, 1))))
